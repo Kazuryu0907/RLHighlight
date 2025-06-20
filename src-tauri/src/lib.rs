@@ -4,6 +4,8 @@ mod obs;
 mod udp;
 mod vlc_manager;
 
+use tauri::AppHandle;
+use tauri_plugin_updater::UpdaterExt;
 use mugi_schema::MugiCmd;
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc::{self};
@@ -220,9 +222,37 @@ pub fn run() {
     console_subscriber::init();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                update(handle).await.unwrap();
+            });
+            Ok(())
+        })
         .manage(AppState::new())
         .invoke_handler(tauri::generate_handler![connect_obs, play_highlights])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
+    if let Some(update) = app.updater()?.check().await? {
+        let mut downloaded = 0;
+        update
+            .download_and_install(
+                |chunk_length, content_length| {
+                    downloaded += chunk_length;
+                    println!("downloaded {downloaded} from {content_length:?}");
+                },
+                || {
+                    println!("download finished");
+                },
+            )
+            .await?;
+        println!("update installed");
+        app.restart();
+    }
+    Ok(())
 }
