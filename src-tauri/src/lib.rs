@@ -27,21 +27,43 @@ impl AppState {
 }
 
 
+
 #[tauri::command]
-async fn send_udp_command(command: String) -> Result<String, String> {
-    use std::net::UdpSocket;
+async fn play_highlights(
+    video_paths: Vec<String>,
+    state: tauri::State<'_, AppState>
+) -> Result<String, String> {
+    if video_paths.is_empty() {
+        return Ok("再生する動画がありません".to_string());
+    }
     
-    let socket = UdpSocket::bind("0.0.0.0:0")
-        .map_err(|e| format!("Failed to bind UDP socket: {}", e))?;
+    // OBS接続情報を取得
+    let (host, port, password) = {
+        let conn_info = state.obs_connection_info.lock().unwrap();
+        match conn_info.as_ref() {
+            Some((host, port, password)) => (host.clone(), *port, password.clone()),
+            None => return Err("OBS接続情報が見つかりません".to_string()),
+        }
+    };
     
-    let message = format!(r#"{{"cmd":"{}"}}"#, command);
-    let target_addr = "127.0.0.1:12345";
+    // OBS接続を作成
+    let mut obs = obs::Obs::new();
+    let password_ref = password.as_deref();
+    obs.connect(&host, port, password_ref).await
+        .map_err(|e| format!("Failed to connect to OBS: {}", e))?;
     
-    socket.send_to(message.as_bytes(), target_addr)
-        .map_err(|e| format!("Failed to send UDP message: {}", e))?;
+    // ファイル名からPathBufに変換（仮想的なパスとして扱う）
+    let movie_pathes: Vec<std::path::PathBuf> = video_paths
+        .iter()
+        .map(|filename| std::path::PathBuf::from(filename))
+        .collect();
     
-    println!("Sent UDP command: {}", message);
-    Ok(format!("コマンド '{}' を送信しました", command))
+    // VLCソースで動画再生
+    if let Err(e) = obs.play_vlc_source(&movie_pathes).await {
+        return Err(format!("Failed to play VLC source: {}", e));
+    }
+    
+    Ok(format!("{}個のハイライト動画を再生しました", video_paths.len()))
 }
 
 #[tauri::command]
@@ -50,6 +72,7 @@ async fn connect_obs(
     port: u16,
     password: Option<String>,
     state: tauri::State<'_, AppState>,
+    app_handle: tauri::AppHandle,
 ) -> Result<String, String> {
     println!("Attempting to connect to OBS at {}:{}", host, port);
     
@@ -86,7 +109,7 @@ async fn connect_obs(
             }
             
             // システム開始
-            start_system(host, port, password, state).await?;
+            start_system(host, port, password, state, app_handle).await?;
             
             Ok("OBS接続に成功しました".to_string())
         }
@@ -102,6 +125,7 @@ async fn start_system(
     port: u16,
     password: Option<String>,
     state: tauri::State<'_, AppState>,
+    app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
     println!("Starting RL Replay system...");
     
@@ -115,7 +139,7 @@ async fn start_system(
     let host_clone = host.clone();
     let password_clone = password.clone();
     tokio::spawn(async move {
-        if let Err(e) = run_main_system(host_clone, port, password_clone).await {
+        if let Err(e) = run_main_system(host_clone, port, password_clone, app_handle).await {
             println!("Main system error: {}", e);
         }
     });
@@ -128,6 +152,7 @@ async fn run_main_system(
     host: String,
     port: u16,
     password: Option<String>,
+    app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
     // OBS接続を再作成
     let mut obs = obs::Obs::new();
@@ -149,7 +174,7 @@ async fn run_main_system(
     obs.set_event_listener(rb_tx).await
         .map_err(|e| format!("Failed to set event listener: {}", e))?;
     
-    vlc_manager.set_event_listener(rb_rx);
+    vlc_manager.set_event_listener(rb_rx, app_handle.clone());
     
     // UDPサーバー開始
     let (tx, mut rx) = mpsc::channel::<String>(32);
@@ -173,11 +198,8 @@ async fn run_main_system(
                     }
                 }
                 if cmd == MugiCmd::Dbg {
-                    let movie_pathes = vlc_manager.get_pathes().await;
-                    if let Err(e) = obs.play_vlc_source(&movie_pathes).await {
-                        println!("Failed to play VLC source: {}", e);
-                    }
-                    vlc_manager.clear_videos().await;
+                    // DBGコマンドは現在フロントエンド経由で処理される
+                    println!("DBG command received - handled by frontend");
                 }
             }
         }
@@ -194,7 +216,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(AppState::new())
-        .invoke_handler(tauri::generate_handler![connect_obs, send_udp_command])
+        .invoke_handler(tauri::generate_handler![connect_obs, play_highlights])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

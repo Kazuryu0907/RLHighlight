@@ -1,14 +1,10 @@
-use std::{
-    path::PathBuf,
-    sync::{Arc, LazyLock},
-};
+use std::path::PathBuf;
 
 use time::Duration;
 
+use tauri::Emitter;
 use obws::requests::custom::source_settings::SlideshowFile;
-use tokio::sync::{Mutex, mpsc::Receiver};
-
-static VIDEOPATHES: LazyLock<Mutex<Vec<PathBuf>>> = LazyLock::new(|| Mutex::new(Vec::new()));
+use tokio::sync::mpsc::Receiver;
 
 pub struct VlcManager {}
 
@@ -16,30 +12,22 @@ impl VlcManager {
     pub fn new() -> Self {
         Self {}
     }
-    // replay_bufferのpath一覧をVecに保存する
+    // replay_bufferのpathをフロントエンドに送信
     // rx: OBSのreplay_bufferのpathが降ってくる
-    pub fn set_event_listener(&self, mut rx: Receiver<PathBuf>) {
+    pub fn set_event_listener(&self, mut rx: Receiver<PathBuf>, app_handle: tauri::AppHandle) {
         tokio::spawn(async move {
             while let Some(path) = rx.recv().await {
                 println!("path:{:?}", path);
-                {
-                    let video_pathes = &VIDEOPATHES;
-                    let mut video_pathes = video_pathes.lock().await;
-                    video_pathes.push(path);
+                
+                // ファイル名のみを抽出
+                if let Some(filename) = path.file_name().and_then(|name| name.to_str()) {
+                    // フロントエンドに個別のパスを送信
+                    if let Err(e) = app_handle.emit("video_path_added", filename) {
+                        println!("Failed to emit video_path_added event: {}", e);
+                    }
                 }
             }
         });
     }
 
-    pub async fn get_pathes(&self) -> Vec<PathBuf> {
-        let video_pathes = &VIDEOPATHES;
-        let video_pathes = video_pathes.lock().await;
-        video_pathes.clone()
-    }
-
-    pub async fn clear_videos(&self) {
-        let video_pathes = &VIDEOPATHES;
-        let mut video_pathes = video_pathes.lock().await;
-        video_pathes.clear();
-    }
 }
