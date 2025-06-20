@@ -2,7 +2,10 @@ use std::path::PathBuf;
 
 use futures_util::{StreamExt, pin_mut};
 use obws::{Client, client, events::Event, requests::custom::source_settings::SlideshowFile};
-use tokio::{sync::{mpsc::Sender, OnceCell}, task::JoinHandle};
+use tokio::{
+    sync::{OnceCell, mpsc::Sender},
+    task::JoinHandle,
+};
 
 use time::Duration;
 const UNIQUE_REPLAY_SOURCE_NAME: &str = "RL_REPLAY_VLC_SOURCE";
@@ -11,12 +14,17 @@ pub struct Obs {
     client: Option<Client>,
     host: OnceCell<String>,
     port: OnceCell<u16>,
-    password: OnceCell<Option<String>>
+    password: OnceCell<Option<String>>,
 }
 
 impl Obs {
     pub fn new() -> Self {
-        Obs { client: None, host: OnceCell::new(), port: OnceCell::new(),password: OnceCell::new() }
+        Obs {
+            client: None,
+            host: OnceCell::new(),
+            port: OnceCell::new(),
+            password: OnceCell::new(),
+        }
     }
     pub async fn connect(
         &mut self,
@@ -30,7 +38,7 @@ impl Obs {
         self.port.set(port).unwrap();
         if let Some(pass) = password {
             self.password.set(Some(pass.to_string())).unwrap();
-        }else {
+        } else {
             self.password.set(None).unwrap();
         }
         Ok(())
@@ -204,12 +212,12 @@ impl Obs {
     pub async fn set_event_listener(&self, tx: Sender<PathBuf>) -> Result<(), String> {
         let host = self.host.get().unwrap();
         let port = self.port.get().unwrap().to_owned();
-        let password = match self.password.get().unwrap(){
+        let password = match self.password.get().unwrap() {
             Some(d) => Some(d.as_str()),
-            None => None
+            None => None,
         };
 
-        let client = Client::connect(host,port,password).await.unwrap();
+        let client = Client::connect(host, port, password).await.unwrap();
         tokio::spawn(async move {
             let events = client.events().unwrap();
             pin_mut!(events);
