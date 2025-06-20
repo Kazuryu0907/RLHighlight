@@ -162,8 +162,3 @@ RLHighlight/
 
 [Twitter badge]: https://img.shields.io/twitter/url?label=kazuryu_rl&style=social&url=https%3A%2F%2Ftwitter.com%2Fkazuryu_rl
 [Twitter link]: https://twitter.com/intent/follow?screen_name=kazuryu_rl
----
-
-**開発者**: [Your Name](https://github.com/yourusername)  
-**作成日**: 2024年  
-**最終更新**: 2024年
