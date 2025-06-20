@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "RL_Highlight",
-  "version": "0.2.0",
+  "productName": "RLHighlight",
+  "version": "1.0.0",
   "identifier": "com.rl-highlight.app",
   "build": {
     "beforeDevCommand": "bun run dev",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "rl-highlight",
+        "title": "RLHighlight",
         "width": 800,
         "height": 600
       }
@@ -37,7 +37,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZGOUVEREI2MDNBRDQxODIKUldTQ1FhMER0dDJlYjFNdnhFMU5KZTNrSDl2VmY3UGFYekRRREh4UzMyT3JSMkExcEZOUXpXNGQK",
       "endpoints": [
-        "https://github.com/Kazuryu0907/new_rl_replay/releases/latest/download/latest.json"
+        "https://github.com/Kazuryu0907/RLHighlight/releases/latest/download/latest.json"
       ]
     }
   }
