@@ -29,18 +29,22 @@ pub enum MugiCmd {
 struct TeamNames {
     blue: String,
     orange: String,
-    matchId: String,
+    #[serde(rename = "matchId")]
+    match_id: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Demolished {
-    receiverIndex: u32,
-    victimIndex: u32,
+    #[serde(rename = "receiverIndex")]
+    receiver_index: u32,
+    #[serde(rename = "victimIndex")]
+    victim_index: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 struct MatchId {
-    matchId: String,
+    #[serde(rename = "matchId")]
+    match_id: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -53,26 +57,24 @@ struct _Stats {
     saves: u32,
     shots: u32,
     demos: u32,
-    ballTouches: u32,
+    #[serde(rename = "ballTouches")]
+    ball_touches: u32,
 }
-
-type Stats = Vec<_Stats>;
-type Dbg = String;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Goals {
     team: String,
-    scoreId: String,
-    assistId: String,
+    #[serde(rename = "scoreId")]
+    score_id: String,
+    #[serde(rename = "assistId")]
+    assist_id: String,
 }
-
-type DisplayNames = Vec<String>;
-type PlayerTable = Vec<String>;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Time {
     time: u32,
-    isOvertime: u8,
+    #[serde(rename = "isOvertime")]
+    is_overtime: u8,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -96,9 +98,11 @@ struct Score {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Player {
-    playerIndex: usize,
+    #[serde(rename = "playerIndex")]
+    player_index: usize,
     team: String,
-    playerName: String,
+    #[serde(rename = "playerName")]
+    player_name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -139,7 +143,6 @@ pub fn parse_cmd(json: &str) -> Result<MugiCmd> {
 
 #[cfg(test)]
 mod test {
-    use std::{fs::File, io::Read};
 
     use super::*;
 
@@ -195,19 +198,19 @@ mod test {
                 MugiCmd::Start => {}
                 MugiCmd::End => {}
                 MugiCmd::Stats => {
-                    serde_json::from_str::<MugiData<Stats>>(&msg).unwrap();
+                    serde_json::from_str::<MugiData<Vec<_Stats>>>(&msg).unwrap();
                 }
                 MugiCmd::Goals => {
                     serde_json::from_str::<MugiData<Goals>>(&msg).unwrap();
                 }
                 MugiCmd::Dbg => {
-                    serde_json::from_str::<MugiData<Dbg>>(&msg).unwrap();
+                    serde_json::from_str::<MugiData<String>>(&msg).unwrap();
                 }
                 MugiCmd::DisplayNames => {
-                    serde_json::from_str::<MugiData<DisplayNames>>(&msg).unwrap();
+                    serde_json::from_str::<MugiData<Vec<String>>>(&msg).unwrap();
                 }
                 MugiCmd::PlayerTable => {
-                    serde_json::from_str::<MugiData<PlayerTable>>(&msg).unwrap();
+                    serde_json::from_str::<MugiData<Vec<String>>>(&msg).unwrap();
                 }
                 MugiCmd::Time => {
                     serde_json::from_str::<MugiData<Time>>(&msg).unwrap();
