@@ -7,7 +7,7 @@ mod vlc_manager;
 use tauri::AppHandle;
 use tauri_plugin_updater::UpdaterExt;
 use mugi_schema::MugiCmd;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use tokio::sync::mpsc::{self};
 use udp::bind_socket;
 use vlc_manager::VlcManager;
@@ -19,6 +19,7 @@ type ObsConnectionInfo = Arc<Mutex<Option<(String, u16, Option<String>)>>>;
 struct AppState {
     obs_connection_info: ObsConnectionInfo,
     is_system_running: Arc<Mutex<bool>>,
+    sleep_duration_sec: Arc<RwLock<u64>>,
 }
 
 impl AppState {
@@ -26,8 +27,32 @@ impl AppState {
         Self {
             obs_connection_info: Arc::new(Mutex::new(None)),
             is_system_running: Arc::new(Mutex::new(false)),
+            sleep_duration_sec: Arc::new(RwLock::new(3)), // デフォルト3秒
         }
     }
+}
+
+#[tauri::command]
+async fn get_sleep_duration(
+    state: tauri::State<'_, AppState>,
+) -> Result<u64, String> {
+    let sleep_dur = state.sleep_duration_sec.read().unwrap();
+    Ok(*sleep_dur)
+}
+
+#[tauri::command]
+async fn set_sleep_duration(
+    duration: u64,
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    let clamped_duration = duration.max(1).min(30); // 1-30秒の範囲制限
+    
+    {
+        let mut sleep_dur = state.sleep_duration_sec.write().unwrap();
+        *sleep_dur = clamped_duration;
+    }
+    
+    Ok(format!("録画遅延時間を{}秒に設定しました", clamped_duration))
 }
 
 #[tauri::command]
@@ -142,8 +167,9 @@ async fn start_system(
     // 別タスクでメインシステムを起動
     let host_clone = host.clone();
     let password_clone = password.clone();
+    let sleep_duration_clone = state.sleep_duration_sec.clone();
     tokio::spawn(async move {
-        if let Err(e) = run_main_system(host_clone, port, password_clone, app_handle).await {
+        if let Err(e) = run_main_system(host_clone, port, password_clone, sleep_duration_clone, app_handle).await {
             println!("Main system error: {}", e);
         }
     });
@@ -156,6 +182,7 @@ async fn run_main_system(
     host: String,
     port: u16,
     password: Option<String>,
+    sleep_duration: Arc<RwLock<u64>>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
     // OBS接続を再作成
@@ -200,7 +227,12 @@ async fn run_main_system(
             Ok(cmd) => {
                 if cmd == MugiCmd::Scored || cmd == MugiCmd::EpicSave {
                     println!("OBS fire!");
-                    tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+                    let duration = {
+                        let sleep_dur = sleep_duration.read().unwrap();
+                        *sleep_dur
+                    };
+                    println!("Waiting {} seconds before saving replay buffer", duration);
+                    tokio::time::sleep(std::time::Duration::from_secs(duration)).await;
                     if let Err(e) = obs.save_replay_buffer().await {
                         println!("Failed to save replay buffer: {}", e);
                     }
@@ -232,7 +264,7 @@ pub fn run() {
             Ok(())
         })
         .manage(AppState::new())
-        .invoke_handler(tauri::generate_handler![connect_obs, play_highlights])
+        .invoke_handler(tauri::generate_handler![connect_obs, play_highlights, set_sleep_duration, get_sleep_duration])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
