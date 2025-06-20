@@ -114,7 +114,7 @@ impl Obs {
         Ok(())
     }
 
-    pub async fn play_vlc_source(&self, movie_pathes: &Vec<PathBuf>) -> Result<(), String> {
+    pub async fn play_vlc_source(&self, movie_pathes: &[PathBuf]) -> Result<(), String> {
         let client = self.get_client()?;
         let playlists: Vec<SlideshowFile> = movie_pathes
             .iter()

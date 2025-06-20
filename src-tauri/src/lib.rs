@@ -10,9 +10,12 @@ use tokio::sync::mpsc::{self};
 use udp::bind_socket;
 use vlc_manager::VlcManager;
 
+// 複雑な型を簡素化するためのtype alias
+type ObsConnectionInfo = Arc<Mutex<Option<(String, u16, Option<String>)>>>;
+
 // グローバル状態管理用の構造体
 struct AppState {
-    obs_connection_info: Arc<Mutex<Option<(String, u16, Option<String>)>>>,
+    obs_connection_info: ObsConnectionInfo,
     is_system_running: Arc<Mutex<bool>>,
 }
 
