@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { use, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import LoginForm from "./components/LoginForm";
 import Dashboard from "./components/Dashboard";
@@ -6,10 +6,11 @@ import "./App.css";
 
 type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'error';
 
-function App() {
+function App({versionPromise}: { versionPromise: Promise<string> }) {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('idle');
   const [isConnecting, setIsConnecting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const version = use(versionPromise);
 
   const handleConnect = async (port: number, password?: string) => {
     setIsConnecting(true);
@@ -36,7 +37,7 @@ function App() {
 
   // 接続が完了している場合はダッシュボードを表示
   if (connectionStatus === 'connected') {
-    return <Dashboard />;
+    return <Dashboard version={version} />;
   }
 
   // 未接続の場合はログイン画面を表示
@@ -46,6 +47,7 @@ function App() {
       isConnecting={isConnecting}
       connectionStatus={connectionStatus}
       errorMessage={errorMessage}
+      version={version} // バージョン情報を渡す
     />
   );
 }

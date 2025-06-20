@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
-interface DashboardProps {}
+interface DashboardProps {
+  version: string;
+}
 
-function Dashboard({}: DashboardProps) {
+function Dashboard({ version }: DashboardProps) {
   const [videoPaths, setVideoPaths] = useState<Set<string>>(new Set());
   const [sleepDuration, setSleepDuration] = useState<number>(0);
   
@@ -65,7 +67,7 @@ function Dashboard({}: DashboardProps) {
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">RL Replay Dashboard</h1>
+          <h1 className="text-4xl font-bold mb-2">RL Replay Dashboard v{version}</h1>
           <div className="text-green-400 text-sm">● OBS Studio 接続済み</div>
         </div>
         

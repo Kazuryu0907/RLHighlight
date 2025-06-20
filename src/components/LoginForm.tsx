@@ -5,9 +5,10 @@ interface LoginFormProps {
   isConnecting: boolean;
   connectionStatus: 'idle' | 'connecting' | 'connected' | 'error';
   errorMessage?: string;
+  version?: string;
 }
 
-export default function LoginForm({ onConnect, isConnecting, connectionStatus, errorMessage }: LoginFormProps) {
+export default function LoginForm({ onConnect, isConnecting, connectionStatus, errorMessage, version }: LoginFormProps) {
   const [port, setPort] = useState<string>("4455");
   const [password, setPassword] = useState<string>("");
 
@@ -42,7 +43,7 @@ export default function LoginForm({ onConnect, isConnecting, connectionStatus, e
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <div className="bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">RL Replay</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">RL Replay v{version}</h1>
           <p className="text-gray-400">OBS Studio接続</p>
         </div>
 
