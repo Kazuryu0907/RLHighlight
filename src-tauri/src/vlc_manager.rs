@@ -1,9 +1,6 @@
 use std::path::PathBuf;
 
-use time::Duration;
-
 use tauri::Emitter;
-use obws::requests::custom::source_settings::SlideshowFile;
 use tokio::sync::mpsc::Receiver;
 
 pub struct VlcManager {}
@@ -18,7 +15,7 @@ impl VlcManager {
         tokio::spawn(async move {
             while let Some(path) = rx.recv().await {
                 println!("path:{:?}", path);
-                
+
                 // ファイル名のみを抽出
                 if let Some(filename) = path.file_name().and_then(|name| name.to_str()) {
                     // フロントエンドに個別のパスを送信
@@ -29,5 +26,4 @@ impl VlcManager {
             }
         });
     }
-
 }

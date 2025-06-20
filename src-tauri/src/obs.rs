@@ -1,11 +1,8 @@
 use std::path::PathBuf;
 
 use futures_util::{StreamExt, pin_mut};
-use obws::{Client, client, events::Event, requests::custom::source_settings::SlideshowFile};
-use tokio::{
-    sync::{OnceCell, mpsc::Sender},
-    task::JoinHandle,
-};
+use obws::{Client, events::Event, requests::custom::source_settings::SlideshowFile};
+use tokio::sync::{OnceCell, mpsc::Sender};
 
 use time::Duration;
 const UNIQUE_REPLAY_SOURCE_NAME: &str = "RL_REPLAY_VLC_SOURCE";
@@ -212,10 +209,7 @@ impl Obs {
     pub async fn set_event_listener(&self, tx: Sender<PathBuf>) -> Result<(), String> {
         let host = self.host.get().unwrap();
         let port = self.port.get().unwrap().to_owned();
-        let password = match self.password.get().unwrap() {
-            Some(d) => Some(d.as_str()),
-            None => None,
-        };
+        let password = self.password.get().unwrap().as_ref().map(|d| d.as_str());
 
         let client = Client::connect(host, port, password).await.unwrap();
         tokio::spawn(async move {
