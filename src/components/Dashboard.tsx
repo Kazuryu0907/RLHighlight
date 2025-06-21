@@ -67,7 +67,7 @@ function Dashboard({ version }: DashboardProps) {
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">RL Replay Dashboard v{version}</h1>
+          <h1 className="text-4xl font-bold mb-2">RLHighlight Dashboard v{version}</h1>
           <div className="text-green-400 text-sm">● OBS Studio 接続済み</div>
         </div>
         
