@@ -8,8 +8,9 @@
 
 **Rocket League大会用Highlight自動clip・再生システム**
 
-BakkesModプラグインからUDPデータを受信し、OBSと連携してリプレイバッファの録画・再生を自動化するTauriデスクトップアプリケーションです
-![image](https://github.com/user-attachments/assets/901dda00-ff01-492a-b67e-8cf1c9684dfe)
+BakkesModプラグインからUDPデータを受信し、OBSと連携してリプレイバッファの録画・再生を自動化するTauriデスクトップアプリケーションです  
+![image](https://github.com/user-attachments/assets/ec25fe77-dd7a-4778-a327-8688ae83e87a)
+
 
 ## ✨ 主要機能
 
