@@ -24,7 +24,7 @@ BakkesModプラグインからUDPデータを受信し、OBSと連携してリ�
 
 ### 必須ソフトウェア
 - **OBS** (WebSocketサーバー有効化)
-- **[Mugi](https://github.com/Kazuryu0907/Mugi)** (BakkesMod plugin)
+- **[Mugi](https://github.com/Kazuryu0907/Mugi/releases/)** (BakkesMod plugin)
 - **[VLC meida player](https://www.videolan.org/vlc/index.ja.html)** (Highlight再生用)
 
 ### OBS Studio設定
@@ -42,7 +42,7 @@ OBSを起動
 ## 🚀 インストール
 
 ### 1. リリースからダウンロード
-[Releases](https://github.com/yourusername/rl_replay/releases)から最新版をダウンロード
+[Releases](https://github.com/Kazuryu0907/RLHighlight/releases)から最新版をダウンロード
 
 ### 2. インストール実行
 ダウンロードした `.msi` ファイルを実行してインストール
