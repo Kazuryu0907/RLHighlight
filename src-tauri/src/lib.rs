@@ -4,13 +4,15 @@ mod obs;
 mod udp;
 mod vlc_manager;
 
-use tauri::AppHandle;
-use tauri_plugin_updater::UpdaterExt;
 use mugi_schema::MugiCmd;
 use std::sync::{Arc, Mutex, RwLock};
+use tauri::AppHandle;
+use tauri_plugin_log::{Target, TargetKind};
+use tauri_plugin_updater::UpdaterExt;
 use tokio::sync::mpsc::{self};
 use udp::bind_socket;
 use vlc_manager::VlcManager;
+use log::{info, error, debug};
 
 // 複雑な型を簡素化するためのtype alias
 type ObsConnectionInfo = Arc<Mutex<Option<(String, u16, Option<String>)>>>;
@@ -33,9 +35,7 @@ impl AppState {
 }
 
 #[tauri::command]
-async fn get_sleep_duration(
-    state: tauri::State<'_, AppState>,
-) -> Result<u64, String> {
+async fn get_sleep_duration(state: tauri::State<'_, AppState>) -> Result<u64, String> {
     let sleep_dur = state.sleep_duration_sec.read().unwrap();
     Ok(*sleep_dur)
 }
@@ -46,13 +46,16 @@ async fn set_sleep_duration(
     state: tauri::State<'_, AppState>,
 ) -> Result<String, String> {
     let clamped_duration = duration.max(1).min(30); // 1-30秒の範囲制限
-    
+
     {
         let mut sleep_dur = state.sleep_duration_sec.write().unwrap();
         *sleep_dur = clamped_duration;
     }
-    
-    Ok(format!("録画遅延時間を{}秒に設定しました", clamped_duration))
+
+    Ok(format!(
+        "録画遅延時間を{}秒に設定しました",
+        clamped_duration
+    ))
 }
 
 #[tauri::command]
@@ -103,7 +106,7 @@ async fn connect_obs(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<String, String> {
-    println!("Attempting to connect to OBS at {}:{}", host, port);
+    info!("Attempting to connect to OBS at {}:{}", host, port);
 
     // 既にシステムが動作中の場合はエラー
     {
@@ -119,7 +122,7 @@ async fn connect_obs(
     // OBS接続試行
     match obs.connect(&host, port, password_ref).await {
         Ok(_) => {
-            println!("Connected to OBS successfully");
+            info!("Connected to OBS successfully");
 
             // リプレイバッファ設定
             if let Err(e) = obs.set_replay_buffer().await {
@@ -143,7 +146,7 @@ async fn connect_obs(
             Ok("OBS接続に成功しました".to_string())
         }
         Err(e) => {
-            println!("Failed to connect to OBS: {}", e);
+            error!("Failed to connect to OBS: {}", e);
             Err(format!("OBS接続に失敗しました: {}", e))
         }
     }
@@ -156,7 +159,7 @@ async fn start_system(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
-    println!("Starting RL Replay system...");
+    info!("Starting RL Replay system...");
 
     // システム動作中のフラグを設定
     {
@@ -169,12 +172,20 @@ async fn start_system(
     let password_clone = password.clone();
     let sleep_duration_clone = state.sleep_duration_sec.clone();
     tokio::spawn(async move {
-        if let Err(e) = run_main_system(host_clone, port, password_clone, sleep_duration_clone, app_handle).await {
-            println!("Main system error: {}", e);
+        if let Err(e) = run_main_system(
+            host_clone,
+            port,
+            password_clone,
+            sleep_duration_clone,
+            app_handle,
+        )
+        .await
+        {
+            error!("Main system error: {}", e);
         }
     });
 
-    println!("RL Replay system started successfully");
+    info!("RL Replay system started successfully");
     Ok(())
 }
 
@@ -215,7 +226,7 @@ async fn run_main_system(
     let (tx, mut rx) = mpsc::channel::<String>(32);
     tokio::spawn(async {
         if let Err(e) = bind_socket(tx).await {
-            println!("UDP socket error: {}", e);
+            error!("UDP socket error: {}", e);
         }
     });
 
@@ -223,29 +234,24 @@ async fn run_main_system(
     while let Some(d) = rx.recv().await {
         let cmd = mugi_schema::parse_cmd(&d);
         match cmd {
-            Err(_) => println!("Failed to parse:{}", d),
+            Err(_) => error!("Failed to parse:{}", d),
             Ok(cmd) => {
                 if cmd == MugiCmd::Scored || cmd == MugiCmd::EpicSave {
-                    println!("OBS fire!");
+                    debug!("OBS fire!");
                     let duration = {
                         let sleep_dur = sleep_duration.read().unwrap();
                         *sleep_dur
                     };
-                    println!("Waiting {} seconds before saving replay buffer", duration);
                     tokio::time::sleep(std::time::Duration::from_secs(duration)).await;
                     if let Err(e) = obs.save_replay_buffer().await {
-                        println!("Failed to save replay buffer: {}", e);
+                        error!("Failed to save replay buffer: {}", e);
                     }
-                }
-                if cmd == MugiCmd::Dbg {
-                    // DBGコマンドは現在フロントエンド経由で処理される
-                    println!("DBG command received - handled by frontend");
                 }
             }
         }
     }
 
-    println!("UDP receiver closed, system shutting down");
+    info!("UDP receiver closed, system shutting down");
     Ok(())
 }
 
@@ -254,6 +260,8 @@ pub fn run() {
     console_subscriber::init();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_log::Builder::new()
+        .target(Target::new(TargetKind::Folder { path: std::path::PathBuf::from("./logs"), file_name: None } )).level(log::LevelFilter::Debug).build())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
@@ -264,7 +272,12 @@ pub fn run() {
             Ok(())
         })
         .manage(AppState::new())
-        .invoke_handler(tauri::generate_handler![connect_obs, play_highlights, set_sleep_duration, get_sleep_duration])
+        .invoke_handler(tauri::generate_handler![
+            connect_obs,
+            play_highlights,
+            set_sleep_duration,
+            get_sleep_duration
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -276,14 +289,14 @@ async fn update(app: AppHandle) -> tauri_plugin_updater::Result<()> {
             .download_and_install(
                 |chunk_length, content_length| {
                     downloaded += chunk_length;
-                    println!("downloaded {downloaded} from {content_length:?}");
+                    info!("downloaded {downloaded} from {content_length:?}");
                 },
                 || {
-                    println!("download finished");
+                    info!("download finished");
                 },
             )
             .await?;
-        println!("update installed");
+        info!("update installed");
         app.restart();
     }
     Ok(())

@@ -26,6 +26,8 @@ serde_json = "1.0.140"
 time = "0.3.41"
 tokio = { version = "1.44.1", features = ["full"] }
 gag = "1.0.0"
+tauri-plugin-log = "2"
+log = "0.4.27"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"

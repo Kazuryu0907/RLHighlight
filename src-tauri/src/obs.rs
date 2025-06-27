@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use futures_util::{StreamExt, pin_mut};
 use obws::{Client, events::Event, requests::custom::source_settings::SlideshowFile};
 use tokio::sync::{OnceCell, mpsc::Sender};
+use log::{debug};
 
 use time::Duration;
 const UNIQUE_REPLAY_SOURCE_NAME: &str = "RL_REPLAY_VLC_SOURCE";
@@ -108,7 +109,7 @@ impl Obs {
         };
         let res = client.inputs().create(create).await;
         match res {
-            Ok(_) => println!("VLC source created"),
+            Ok(_) => debug!("VLC source created"),
             Err(e) => return Err(format!("Failed to create VLC source: {e}")),
         }
         Ok(())
@@ -142,7 +143,7 @@ impl Obs {
         };
         let res = client.inputs().set_settings(input_setting).await;
         match res {
-            Ok(_) => println!("VLC source updated"),
+            Ok(_) => debug!("VLC source updated"),
             Err(e) => return Err(format!("Failed to create VLC source: {e}")),
         }
         // Sourceの有効化
