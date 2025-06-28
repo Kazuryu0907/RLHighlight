@@ -5,7 +5,7 @@ use log::info;
 // use tauri::async_runtime::{Receiver,Sender};
 
 pub async fn bind_socket(tx: Sender<String>) -> io::Result<()> {
-    let sock = UdpSocket::bind("0.0.0.0:12346").await?;
+    let sock = UdpSocket::bind("0.0.0.0:12344").await?;
     info!("Listening on {}", sock.local_addr()?);
     let mut buf = [0; 1024];
     // let mut f = File::create("mugi_log.txt").await?;
