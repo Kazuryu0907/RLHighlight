@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { path } from "@tauri-apps/api";
 
 interface DashboardProps {
   version: string;
