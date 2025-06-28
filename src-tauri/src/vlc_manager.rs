@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
+use log::{error, info};
 use tauri::Emitter;
 use tokio::sync::mpsc::Receiver;
-use log::{info, error};
 
 pub struct VlcManager {}
 
@@ -16,13 +16,9 @@ impl VlcManager {
         tokio::spawn(async move {
             while let Some(path) = rx.recv().await {
                 info!("path:{:?}", path);
-
-                // ファイル名のみを抽出
-                if let Some(filename) = path.file_name().and_then(|name| name.to_str()) {
-                    // フロントエンドに個別のパスを送信
-                    if let Err(e) = app_handle.emit("video_path_added", filename) {
-                        error!("Failed to emit video_path_added event: {}", e);
-                    }
+                // フロントエンドに個別のパスを送信
+                if let Err(e) = app_handle.emit("video_path_added", path) {
+                    error!("Failed to emit video_path_added event: {}", e);
                 }
             }
         });

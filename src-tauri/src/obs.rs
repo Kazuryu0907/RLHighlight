@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
 use futures_util::{StreamExt, pin_mut};
+use log::debug;
 use obws::{Client, events::Event, requests::custom::source_settings::SlideshowFile};
 use tokio::sync::{OnceCell, mpsc::Sender};
-use log::{debug};
 
 use time::Duration;
 const UNIQUE_REPLAY_SOURCE_NAME: &str = "RL_REPLAY_VLC_SOURCE";

@@ -4,6 +4,7 @@ mod obs;
 mod udp;
 mod vlc_manager;
 
+use log::{debug, error, info};
 use mugi_schema::MugiCmd;
 use std::sync::{Arc, Mutex, RwLock};
 use tauri::AppHandle;
@@ -12,7 +13,6 @@ use tauri_plugin_updater::UpdaterExt;
 use tokio::sync::mpsc::{self};
 use udp::bind_socket;
 use vlc_manager::VlcManager;
-use log::{info, error, debug};
 
 // 複雑な型を簡素化するためのtype alias
 type ObsConnectionInfo = Arc<Mutex<Option<(String, u16, Option<String>)>>>;
@@ -260,8 +260,15 @@ pub fn run() {
     console_subscriber::init();
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_log::Builder::new()
-        .target(Target::new(TargetKind::Folder { path: std::path::PathBuf::from("./logs"), file_name: None } )).level(log::LevelFilter::Debug).build())
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .target(Target::new(TargetKind::Folder {
+                    path: std::path::PathBuf::from("./logs"),
+                    file_name: None,
+                }))
+                .level(log::LevelFilter::Debug)
+                .build(),
+        )
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {

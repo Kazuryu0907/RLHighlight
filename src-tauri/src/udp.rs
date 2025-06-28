@@ -1,7 +1,7 @@
+use log::info;
 use std::io;
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc::Sender;
-use log::info;
 // use tauri::async_runtime::{Receiver,Sender};
 
 pub async fn bind_socket(tx: Sender<String>) -> io::Result<()> {
